@@ -4,4 +4,4 @@ Se esta desarrollando el sistema de monitoreo de temperatura, registro y localiz
 
 Los integrantes del proyecto son Raul. Gabriel, Henry, Victor y Cristian.
 
-este es mi segundo commit
+este es mi segundo commit "gabriel"
