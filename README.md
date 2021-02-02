@@ -6,4 +6,4 @@ Los integrantes del proyecto son Raul. Gabriel, Henry, Victor y Cristian.
 
 este es mi segundo commit "gabriel", "franklin"
 
-henry
+henry, Cristian B
