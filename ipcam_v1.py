@@ -2,7 +2,8 @@ import numpy as np
 import time
 import cv2
 
-cap = cv2.VideoCapture('rtsp://admin:admin@192.168.1.73/cam1/mpeg4')
+#cap = cv2.VideoCapture('rtsp://admin:admin@192.168.1.73/cam1/mpeg4')
+cap = cv2.VideoCapture('rtsp://admin:admin@192.168.1.73:554/cam/realmonitor?channel=0&subtype=0')
 #cap = cv2.VideoCapture(0)
 
 while True:
