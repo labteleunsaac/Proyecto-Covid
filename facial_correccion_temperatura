@@ -1,0 +1,93 @@
+import requests
+import pandas as pd
+from datetime import datetime
+import sqlite3
+import time
+import os
+from glob import glob
+import sqlite3
+import pandas as pd
+from time import time, sleep
+import tensorflow as tf
+from tensorflow import keras
+import numpy as np
+import csv
+from datetime import datetime
+import pdb
+
+url = 'http://localhost:5002/api/v1/publish_camara/'
+#db = sqlite3.connect("SDK_camara/fd_DB.db")
+
+
+def writeCSV(file, data, mode):
+    """Writes `data` in a `file` according a giving `mode`: 'w' to write or 'a' to append in the file """
+    with open(file, mode) as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerow(data)
+
+
+# Parameters
+model = 'C:/Users/Proyecto_Covid/Documents/model/test_8_0.0001_50_tmp.model'
+classification = 'facial'
+facial_results_path = 'C:/Users/Proyecto_Covid/Desktop/proyecto_archivos/facial_tests'
+facial_db = 'facial_tests.csv'
+
+# Get date time to build the CSV filename
+now = datetime.now()
+date = now.strftime("%d_%m_%Y_%H_%M_%S")
+file = os.path.join(facial_results_path, date + facial_db)
+
+dim = (160, 160)
+
+facial_model = keras.models.load_model(model)
+class_names = ['with ' + classification, 'without ' + classification]
+
+db = "C:/Users/Proyecto_Covid/Desktop/proyecto_archivos/Cliente_ArcoDePaso/SDK_camara/fd_DB.db"
+
+# fecha_actual = datetime.now()
+# db = sqlite3.connect("C:/Users/Proyecto_Covid/Desktop/proyecto_archivos/Cliente_ArcoDePaso/SDK_camara/fd_DB.db")
+
+# ===========THIS ONLY APPLIES FOR RECOGNITION =========
+header = ['timeStamp', 'filename', 'modelPrediction', 'temperatureCam', 'temperaturaCorregida']
+writeCSV(file, header, 'w')
+# ===========================================================
+
+last_file = ''
+while (1):
+    with sqlite3.connect(db) as cnx:
+        # data = pd.read_sql_query("SELECT ftemp, timeStamp FROM faceinfo", db)
+        df = pd.read_sql_query("SELECT * FROM faceinfo", cnx)
+        # pdb.set_trace()
+        data = df.iloc[-1]
+        image_path = data.img_path
+        date = data.timeStamp
+        temperatura = float(data.ftemp)
+        temperaturaCorregida = temperatura
+        # camPred = data.isWearMask
+        if last_file != image_path:
+            tic = time()
+            image = keras.preprocessing.image.load_img(image_path, target_size=dim)
+            img_array = keras.preprocessing.image.img_to_array(image)
+            img_array = tf.expand_dims(img_array, 0)
+            predictions = np.squeeze(np.rint(facial_model.predict(img_array))).astype('int')
+            last_file = image_path
+
+            if predictions:
+                # temperaturaCorregida = temperatura
+                temperaturaCorregida = 33.6141 + 0.0814547 * temperatura
+
+            else:
+                # temperaturaCorregida = (temperatura - 28.2971) / 0.220411
+                temperaturaCorregida = 31.54 + 0.132271*temperatura
+
+            print("Prediction: {}, time(sec): {}, date: {}, temperatura leida:{} ,temperaturaCorregida:{}".format(
+                class_names[predictions], time() - tic, date, temperatura, temperaturaCorregida))
+            row = [date, image_path, predictions, temperatura, temperaturaCorregida]
+            writeCSV(file, row, 'a')
+        body = {
+                'camara': 'CAM001',
+                'temperatura': temperaturaCorregida,
+        }
+        x = requests.post(url, json=body)
+        print(x)
+    sleep(0.20)
